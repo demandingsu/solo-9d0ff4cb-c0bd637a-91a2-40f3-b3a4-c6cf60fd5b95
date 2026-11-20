@@ -40,6 +40,11 @@ REQUIRED_COLUMNS = {
 }
 
 
+def table_columns(conn: sqlite3.Connection, table: str) -> set[str]:
+    """返回某张表的全部列名（用于探测旧库是否缺列）。"""
+    return {r[1] for r in conn.execute(f"PRAGMA table_info({table})")}
+
+
 def validate_schema(conn: sqlite3.Connection) -> list[str]:
     """校验上传库是否满足结构约定，返回错误列表（空列表表示通过）。"""
     errors: list[str] = []

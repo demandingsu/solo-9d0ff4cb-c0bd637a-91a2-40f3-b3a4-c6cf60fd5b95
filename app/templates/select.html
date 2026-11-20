@@ -2,7 +2,7 @@
 {% block title %}选择试验 · 隔声试验数据交付复核{% endblock %}
 {% block content %}
 <h2>勾选交付试验、剔除异常读数</h2>
-<p class="muted">源库：{{ source }} ｜ <a href="/">重新上传</a></p>
+<p class="muted">源库：{{ source }} ｜ <a href="/analysis">工艺差分析</a> ｜ <a href="/">重新上传</a></p>
 <form method="post" action="/select">
 {% for g in groups %}
 <fieldset>

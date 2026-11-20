@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}工艺差分析 · 隔声试验数据交付复核{% endblock %}
+{% block content %}
+<h2>工艺差可估计性分析</h2>
+<p class="muted">源库：{{ source }} ｜ <a href="/select">返回选择页</a> ｜ <a href="/">重新上传</a></p>
+
+{% if note %}<p class="ok">{{ note }}</p>{% endif %}
+
+{% if problems %}
+<div class="err">
+  <b>当前库无法进行分析：</b>
+  <ul>
+    {% for p in problems %}<li>{{ p }}</li>{% endfor %}
+  </ul>
+  <p class="muted">旧版导出的库若缺少频点列或数值列，请先补齐后重新上传；交付复核流程不受影响。</p>
+</div>
+{% endif %}
+
+<h3>1. 标注表（按库内读数编号标注工艺 / 舱室 / 装夹方式）</h3>
+{% if table %}
+<p>当前标注表：<b>版本 #{{ version }}</b>（{{ table.size }} 条，来源 {{ annotation_source }}）。
+   每次上传整份替换并生成新版本；分析结论与参与读数始终取自同一版本。</p>
+{% else %}
+<p class="warn">尚未上传标注表。</p>
+{% endif %}
+
+{% if errors %}
+<div class="err">
+  <b>标注表已拒收，未生效{% if table %}，仍沿用版本 #{{ version }}{% endif %}：</b>
+  <ul>
+    {% for e in errors %}<li>{{ e }}</li>{% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+<form method="post" action="/analysis/annotations" enctype="multipart/form-data">
+  <p><input type="file" name="file" accept=".csv" required>
+     <button type="submit" class="primary">上传并整份替换</button></p>
+</form>
+<details>
+  <summary class="muted">CSV 格式说明</summary>
+  <ul class="muted">
+    <li>表头需含 <code>reading_id,process,cabin,fixture</code>
+        （或中文 <code>读数编号,工艺,舱室,装夹方式</code>），多余列忽略；</li>
+    <li>每行把库内一个读数编号标注到工艺、舱室、装夹方式；编码 UTF-8（兼容 BOM）或 GB18030；</li>
+    <li>含库中不存在的读数编号、同一编号标注冲突、或字段为空时，整份拒收并保留原表；
+        完全相同的重复行自动去重；</li>
+    <li>更正标注时整份重新上传即可，版本号递增。</li>
+  </ul>
+</details>
+
+{% if table and not problems %}
+<h3>2. 选择频点与两种工艺</h3>
+{% if freqs %}
+<form method="get" action="/analysis">
+  <p>频点：
+    <select name="freq">
+      {% for f, n in freqs %}
+      <option value="{{ f }}" {% if freq_val == f %}selected{% endif %}>{{ fmt_freq(f) }} Hz（{{ n }} 条已标注）</option>
+      {% endfor %}
+    </select>
+    <button type="submit">选择频点</button>
+  </p>
+</form>
+{% if freq_val is not none %}
+{% if procs|length >= 2 %}
+<form method="get" action="/analysis/result">
+  <input type="hidden" name="freq" value="{{ freq_val }}">
+  <p>工艺甲：<select name="pa">{% for p in procs %}<option value="{{ p }}">{{ p }}</option>{% endfor %}</select>
+     工艺乙：<select name="pb">{% for p in procs %}<option value="{{ p }}" {% if loop.index == 2 %}selected{% endif %}>{{ p }}</option>{% endfor %}</select>
+     <button type="submit" class="primary">计算工艺差</button></p>
+</form>
+<p class="muted">拟合使用该频点<b>全部</b>已标注读数（含其他工艺的读数），
+   按 工艺 + 舱室 + 装夹 三因素加性模型做最小二乘；
+   若所有最优解给出相同的工艺差则显示差值，否则给出两组同为最优、
+   逐条拟合值相同、工艺差却不同的系数。</p>
+{% else %}
+<p class="warn">频点 {{ fmt_freq(freq_val) }} Hz 下只有 {{ procs|length }} 种工艺有标注，无法比较两种工艺。</p>
+{% endif %}
+{% endif %}
+{% else %}
+<p class="warn">当前标注表在任何频点都没有可参与拟合的读数
+   （读数的 frequency_hz 或 level_db 为空，或标注的读数在库中不存在）。</p>
+{% endif %}
+{% endif %}
+{% endblock %}

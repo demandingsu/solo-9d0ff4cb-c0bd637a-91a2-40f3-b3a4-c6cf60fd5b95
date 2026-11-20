@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}工艺差分析结果 · 隔声试验数据交付复核{% endblock %}
+{% block content %}
+<h2>工艺差分析结果</h2>
+<p class="muted">源库：{{ source }} ｜ 标注表<b>版本 #{{ version }}</b>（结论与参与读数均取自该版本）｜
+   <a href="/analysis">返回分析页</a> ｜ <a href="/select">选择页</a></p>
+
+<table>
+  <tr><th>频点</th><th>工艺对</th><th>参与读数</th><th>残差平方和</th></tr>
+  <tr>
+    <td>{{ fmt_freq(freq_val) }} Hz</td>
+    <td>「{{ res.process_a }}」−「{{ res.process_b }}」</td>
+    <td>{{ res.rows|length }} 条（含其他工艺的读数）</td>
+    <td>{{ fmt_db(res.rss) }} dB²</td>
+  </tr>
+</table>
+<p class="muted">参与读数编号：{% for r in res.rows %}#{{ r.reading_id }}{% if not loop.last %}、{% endif %}{% endfor %}</p>
+{% if skipped %}
+<p class="warn">以下已标注读数在该频点的 level_db 为空或非数值，未参与拟合：
+  {% for rid in skipped %}#{{ rid }}{% if not loop.last %}、{% endif %}{% endfor %}</p>
+{% endif %}
+
+{% if res.estimable %}
+<p class="ok"><b>工艺差（{{ res.process_a }} − {{ res.process_b }}）= {{ fmt_db(res.delta) }} dB</b><br>
+所有最小二乘最优解给出的工艺差都相同——工艺差可以与舱室、装夹等试验条件分开。</p>
+<h3>一组最优解的系数</h3>
+<p class="muted">系数本身不唯一（可整体平移），但工艺差在所有最优解中唯一。</p>
+<table>
+  <tr><th>系数</th><th>数值（dB）</th></tr>
+  {% for label, b in res.coef_rows %}
+  <tr><td>{{ label }}</td><td>{{ fmt_db(b) }}</td></tr>
+  {% endfor %}
+  <tr><th>工艺差（{{ res.process_a }} − {{ res.process_b }}）</th><th>{{ fmt_db(res.delta) }}</th></tr>
+</table>
+{% else %}
+<div class="err">
+  <b>无法估计：工艺差与试验条件混杂，不同最优解给出不同的工艺差。</b>
+  <p>存在如下系数调整方向（单位 dB）：</p>
+  <ul>
+    {% for label, w in res.direction %}<li>{{ label }}：{{ fmt_db(w) }}</li>{% endfor %}
+  </ul>
+  <p>沿该方向调整系数，每一条读数的拟合值都保持不变（残差平方和不变），
+     但「{{ res.process_a }} − {{ res.process_b }}」的工艺差随之改变。
+     因此现有标注无法把工艺差异与舱室 / 装夹条件的差异区分开。</p>
+  <p>典型原因：两种工艺的标注在舱室 / 装夹组合上不交叉（例如各工艺只出现在各自的舱室）。
+     补标交叉组合（让同一工艺覆盖不同舱室 / 装夹，或同一舱室 / 装夹下出现两种工艺）后，
+     工艺差可能变为可估计。</p>
+</div>
+<h3>两组同为最优、逐条拟合值相同、工艺差却不同的系数</h3>
+<table>
+  <tr><th>系数</th><th>解①（dB）</th><th>解②（dB）</th></tr>
+  {% for label, b1, b2 in res.coef_rows2 %}
+  <tr><td>{{ label }}</td><td>{{ fmt_db(b1) }}</td><td>{{ fmt_db(b2) }}</td></tr>
+  {% endfor %}
+  <tr><th>工艺差（{{ res.process_a }} − {{ res.process_b }}）</th>
+      <th>{{ fmt_db(res.delta) }}</th><th>{{ fmt_db(res.alt_delta) }}</th></tr>
+</table>
+<p class="muted">两组解的残差平方和均为 {{ fmt_db(res.rss) }} dB²（同为最优），
+   逐条拟合值完全相同（见下表），但工艺差相差 {{ fmt_db(res.alt_delta - res.delta) }} dB。</p>
+{% endif %}
+
+<h3>逐条拟合（参与读数 {{ res.rows|length }} 条）</h3>
+<table>
+  <tr>
+    <th>读数</th><th>工艺</th><th>舱室</th><th>装夹</th><th>实测 dB</th>
+    {% if res.estimable %}
+    <th>拟合 dB</th>
+    {% else %}
+    <th>解①拟合 dB</th><th>解②拟合 dB</th>
+    {% endif %}
+    <th>残差 dB</th>
+  </tr>
+  {% for r in res.view_rows() %}
+  <tr>
+    <td>#{{ r.reading_id }}</td><td>{{ r.process }}</td><td>{{ r.cabin }}</td><td>{{ r.fixture }}</td>
+    <td>{{ fmt_db(r.y) }}</td>
+    <td>{{ fmt_db(r.fitted) }}</td>
+    {% if not res.estimable %}<td>{{ fmt_db(r.alt_fitted) }}</td>{% endif %}
+    <td>{{ fmt_db(r.resid) }}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% endblock %}
