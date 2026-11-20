@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}隔声试验数据交付复核{% endblock %}</title>
+<style>
+  body{font-family:system-ui,"PingFang SC","Microsoft YaHei",sans-serif;
+       margin:2rem auto;max-width:1150px;padding:0 1rem;color:#222;line-height:1.5}
+  table{border-collapse:collapse;width:100%;margin:.5rem 0 1rem}
+  th,td{border:1px solid #ccc;padding:.3rem .5rem;text-align:left;font-size:.88rem}
+  th{background:#f0f0f0}
+  .err{background:#fdecea;border:1px solid #f5c6c0;padding:.6rem .8rem;border-radius:6px}
+  .ok{background:#e8f5e9;border:1px solid #c8e6c9;padding:.6rem .8rem;border-radius:6px}
+  .warn{background:#fff8e1;border:1px solid #ffecb3;padding:.6rem .8rem;border-radius:6px}
+  ol.chain{margin:.2rem 0 .8rem;padding-left:1.4rem;font-size:.88rem}
+  ol.chain li{margin:.15rem 0}
+  button,.btn{padding:.5rem 1.2rem;font-size:1rem;cursor:pointer;border:1px solid #888;
+       border-radius:4px;background:#fff}
+  button.primary{background:#1565c0;border-color:#1565c0;color:#fff}
+  button:disabled{background:#ddd;border-color:#ccc;color:#888;cursor:not-allowed}
+  .muted{color:#777;font-size:.85rem}
+  h2{border-bottom:2px solid #ddd;padding-bottom:.3rem}
+  fieldset{border:1px solid #ddd;border-radius:6px;margin-bottom:1rem}
+  legend{font-weight:600}
+  code{background:#f4f4f4;padding:.1rem .3rem;border-radius:3px}
+</style>
+</head>
+<body>
+{% block content %}{% endblock %}
+</body>
+</html>

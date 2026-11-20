@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}交付预览 · 隔声试验数据交付复核{% endblock %}
+{% block content %}
+<h2>交付预览</h2>
+<p class="muted">源库：{{ source }} ｜ <a href="/select">返回修改选择</a> ｜ <a href="/">重新上传</a></p>
+
+<h3>交付内容汇总</h3>
+<table>
+  <tr><th>组</th><th>试验</th><th>读数</th><th>校准记录</th></tr>
+  <tr>
+    <td>{{ res.group_ids|length }}</td>
+    <td>{{ res.test_ids|length }}</td>
+    <td>{{ res.reading_ids|length }}</td>
+    <td>{{ res.calibration_ids|length }}</td>
+  </tr>
+</table>
+<p class="muted">
+  勾选试验：{{ selected if selected else "（无）" }} ｜
+  剔除读数：{{ excluded if excluded else "（无）" }}
+</p>
+
+{% if pulled_in %}
+<h3>沿引用从未勾选组带入的读数（{{ pulled_in|length }} 条）</h3>
+{% for rid, chain in pulled_in %}
+<ol class="chain">
+  {% for hop in chain %}<li>{{ hop.label }}</li>{% endfor %}
+</ol>
+{% endfor %}
+{% else %}
+<p class="muted">无跨组带入的读数。</p>
+{% endif %}
+
+{% if res.conflicts %}
+<h3>引用冲突（{{ res.conflicts|length }} 条）— 已阻止下载</h3>
+<p class="err">以下引用悬空或指向已剔除的读数，请返回选择页调整（取消剔除、剔除引用方读数，或修正源库）后重新预览。</p>
+{% for c in res.conflicts %}
+<div class="err">
+  <b>{{ c.reason }}</b>
+  <ol class="chain">
+    {% for hop in c.chain %}<li>{{ hop.label }}</li>{% endfor %}
+  </ol>
+</div>
+{% endfor %}
+<form method="post" action="/download">
+  <button type="submit" class="primary" disabled>确认并下载 SQLite 子库</button>
+</form>
+{% else %}
+<p class="ok">引用校验通过：对照与校准引用均已补齐，无悬空、无指向已剔除读数的引用。</p>
+<form method="post" action="/download">
+  <button type="submit" class="primary">确认并下载 SQLite 子库</button>
+</form>
+{% endif %}
+{% endblock %}

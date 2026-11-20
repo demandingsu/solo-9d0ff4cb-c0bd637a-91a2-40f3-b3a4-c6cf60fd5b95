@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}选择试验 · 隔声试验数据交付复核{% endblock %}
+{% block content %}
+<h2>勾选交付试验、剔除异常读数</h2>
+<p class="muted">源库：{{ source }} ｜ <a href="/">重新上传</a></p>
+<form method="post" action="/select">
+{% for g in groups %}
+<fieldset>
+  <legend>组 #{{ g.row.id }}「{{ g.row.name }}」{% if g.row.description %}— {{ g.row.description }}{% endif %}</legend>
+  {% for t in g.tests %}
+  <div style="margin:.6rem 0">
+    <label>
+      <input type="checkbox" class="tsel" name="test" value="{{ t.row.id }}"
+             {% if t.selected %}checked{% endif %}>
+      <b>试验 #{{ t.row.id }}「{{ t.row.name }}」</b>
+    </label>
+    <span class="muted">
+      {% if t.row.standard %}标准 {{ t.row.standard }} ｜{% endif %}
+      {% if t.row.conducted_on %}{{ t.row.conducted_on }} ｜{% endif %}
+      试验级校准 {{ t.row.calibration_id if t.row.calibration_id is not none else "无" }}
+    </span>
+    {% if t.readings %}
+    <table id="rd-{{ t.row.id }}">
+      <tr>
+        {% for h in headers %}<th>{{ h }}</th>{% endfor %}
+        <th>剔除</th>
+      </tr>
+      {% for r in t.readings %}
+      <tr>
+        {% for c in r.cells %}<td>{{ c if c is not none else "" }}</td>{% endfor %}
+        <td><input type="checkbox" class="excl" name="excl" value="{{ r.id }}"
+                   {% if r.excluded %}checked{% endif %}></td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% else %}
+    <p class="muted">（该试验无读数）</p>
+    {% endif %}
+  </div>
+  {% endfor %}
+</fieldset>
+{% endfor %}
+<button type="submit" class="primary">生成预览</button>
+</form>
+<script>
+function toggleTest(cb){
+  const box = document.getElementById('rd-' + cb.value);
+  if(!box) return;
+  box.querySelectorAll('input.excl').forEach(i => i.disabled = !cb.checked);
+}
+document.querySelectorAll('input.tsel').forEach(cb => {
+  cb.addEventListener('change', () => toggleTest(cb));
+  toggleTest(cb);
+});
+</script>
+{% endblock %}
